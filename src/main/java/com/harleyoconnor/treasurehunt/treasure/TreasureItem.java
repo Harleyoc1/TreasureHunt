@@ -1,5 +1,10 @@
 package com.harleyoconnor.treasurehunt.treasure;
 
+/**
+ * Default implementation of ITreasureItem. Holds a name and a value.
+ *
+ * @author Harley O'Connor
+ */
 public class TreasureItem implements ITreasureItem {
 
     private final String name;

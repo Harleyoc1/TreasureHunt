@@ -21,8 +21,8 @@ dependencies {
     // Google's simple Json parser.
     implementation group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
     // Java Utilities - miscellaneous utility classes.
-    implementation group: 'com.harleyoconnor.javautilities', name: 'JavaUtilities', version: '0.0.2'
-    // Java Grids - allows for creation of 2D grids. 
+    implementation group: 'com.harleyoconnor.javautilities', name: 'JavaUtilities', version: '0.0.3'
+    // Java Grids - allows for creation of 2D grids.
     implementation group: 'com.harleyoconnor.javagrids', name: 'JavaGrids', version: '1.0.0'
 
     // Allows for testing classes.

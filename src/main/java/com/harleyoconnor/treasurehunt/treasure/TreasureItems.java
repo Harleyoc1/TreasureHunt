@@ -33,7 +33,7 @@ public class TreasureItems {
         final File directory = FileUtils.getFile("treasure"); // Get treasure directory.
 
         // Loop through treasure jsons and register each item.
-        for (final File file : Objects.requireNonNull(FileUtils.getDirChildren(directory, ".json")))
+        for (final File file : Objects.requireNonNull(FileUtils.getChildFiles(directory, ".json")))
             register (jsonParser, file);
     }
 

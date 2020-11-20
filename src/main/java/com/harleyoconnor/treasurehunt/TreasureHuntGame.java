@@ -151,6 +151,7 @@ public final class TreasureHuntGame {
             newPosition = new Pair<>(newX >= this.treasureGrid.getGrid().size() ? this.treasureGrid.getGrid().size() - 1 : Math.max(newX, 0), newY >= this.treasureGrid.getGrid().get(0).size() ? this.treasureGrid.getGrid().get(0).size() - 1 : Math.max(newY, 0));
         } while (((TreasureGridElement) this.treasureGrid.getElementAt(newPosition)).getMonster() != null);
 
+        treasureGridElement.setTreasureItemTaken(true); // Monster eats treasure.
         treasureGridElement.clearMonster(); // Clear monster from old position.
         ((TreasureGridElement) this.treasureGrid.getElementAt(newPosition)).setMonster(monster); // Add monster to new position.
     }
@@ -196,8 +197,7 @@ public final class TreasureHuntGame {
                 else treasureItemsTaken.put(treasureItem, 1);
             }
 
-            // TODO: Work out punishment if player has no treasure items, improve display of items taken.
-            System.out.println("\nYou landed on a monster! " + (treasureItemsTaken.size() > 0 ? "They took the following items:" : ""));
+            System.out.println("\nYou landed on a monster! " + (treasureItemsTaken.size() > 0 ? "They took the following items:" : "They don't take anything from beggars."));
             treasureItemsTaken.forEach((treasureItem, count) -> System.out.println("- " + count + " " + treasureItem.getName() + (count > 1 ? "s" : "")));
         }
 

@@ -1,8 +1,12 @@
 package com.harleyoconnor.treasurehunt;
 
 import com.harleyoconnor.javagrids.grids.Grid;
-import com.harleyoconnor.javagrids.utils.InputUtils;
-import com.harleyoconnor.javagrids.utils.IntegerUtils;
+import com.harleyoconnor.javagrids.grids.GridElement;
+import com.harleyoconnor.javautilities.InputUtils;
+import com.harleyoconnor.javautilities.IntegerUtils;
+import com.harleyoconnor.treasurehunt.grid.TreasureGridElement;
+import com.harleyoconnor.treasurehunt.living.Monster;
+import com.harleyoconnor.treasurehunt.living.Player;
 import com.harleyoconnor.treasurehunt.treasure.ITreasureItem;
 import com.harleyoconnor.treasurehunt.treasure.TreasureItems;
 import javafx.util.Pair;
@@ -11,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Treasure Hunt Game Object. Handles the game and holds all relevant data.
@@ -23,34 +28,90 @@ public final class TreasureHuntGame {
     private final Grid treasureGrid;
     private final int gridSize;
     private final int guesses;
-    private final Map<Pair<Integer, Integer>, ITreasureItem> treasureMap = new HashMap<>();
     private final List<Player> players = new ArrayList<>();
 
     public TreasureHuntGame (final int gridSize, final int guesses, final List<String> playerNames) {
-        this.treasureGrid = new Grid (gridSize, gridSize, " ", "[", "]");
+        this.treasureGrid = new Grid (gridSize, gridSize, new TreasureGridElement("[ ]"));
         this.gridSize = gridSize;
         this.guesses = guesses;
+
         playerNames.forEach(name -> this.players.add(new Player(name)));
 
-        this.populateTreasureMap();
+        this.createTreasure();
+        this.createMonsters();
     }
 
     /**
      * Populates the treasure map with a random number of random treasure at random positions.
      */
-    private void populateTreasureMap () {
+    private void createTreasure () {
         // Loops for a random number of times.
-        for (int i = 0; i < IntegerUtils.getRandomIntBetween(this.gridSize, this.gridSize * 2); i++) {
+        for (int i = 0; i < IntegerUtils.getRandomIntBetween(this.gridSize * 2, this.gridSize * 5); i++) {
+            // Stop creating treasure if no slots are available (this shouldn't happen if the game board is set to the recommended size).
+            if (!treasureSlotAvailable()) break;
+
             Pair<Integer, Integer> position;
+            TreasureGridElement gridElement;
 
             do {
                 // Gets a random position in the grid.
                 position = new Pair<>(IntegerUtils.getRandomIntBetween(0, this.gridSize - 1), IntegerUtils.getRandomIntBetween(0, this.gridSize - 1));
-            } while(this.treasureMap.containsKey(position));
+                gridElement = (TreasureGridElement) this.treasureGrid.getElementAt(position);
+            } while (gridElement.getTreasureItem() != null);
 
             // Puts a random treasure item at the position.
-            this.treasureMap.put(position, TreasureItems.getRandom());
+            gridElement.setTreasureItem(TreasureItems.getRandom());
         }
+    }
+
+    /**
+     * Creates a random amount of monsters at random positions within the grid.
+     */
+    private void createMonsters () {
+        // Loops for a random amount of times.
+        for (int i = 0; i < IntegerUtils.getRandomIntBetween(3, 5); i++) {
+            // Stop creating monsters if no slots are available (this shouldn't happen if the game board is set to the recommended size).
+            if (!monsterSlotAvailable()) break;
+
+            Monster monster;
+            TreasureGridElement gridElement;
+
+            // Keep looping until an element which doesn't hold a monster is found.
+            do {
+                gridElement = ((TreasureGridElement) this.treasureGrid.getElementAt(this.getRandomPositionInGrid()));
+                monster = gridElement.getMonster();
+            } while (monster != null);
+
+            // Assign the monster to the grid element.
+            gridElement.setMonster(new Monster());
+        }
+    }
+
+    /**
+     * Loops through all elements in the grid to check at least one has no treasure.
+     *
+     * @return True if a treasure slot is available.
+     */
+    private boolean treasureSlotAvailable () {
+        return this.treasureGrid.getGridElements().stream().anyMatch(gridElement -> ((TreasureGridElement) gridElement).getTreasureItem() == null);
+    }
+
+    /**
+     * Loops through all elements in the grid to check at least one has no monster.
+     *
+     * @return True if a monster slot is available.
+     */
+    private boolean monsterSlotAvailable () {
+        return this.treasureGrid.getGridElements().stream().anyMatch(gridElement -> ((TreasureGridElement) gridElement).getMonster() == null);
+    }
+
+    /**
+     * Gets a random position within the bounds of the grid.
+     *
+     * @return The pair of integers making up the indexes of the random position.
+     */
+    private Pair<Integer, Integer> getRandomPositionInGrid () {
+        return new Pair<>(IntegerUtils.getRandomIntBetween(0, this.gridSize - 1), IntegerUtils.getRandomIntBetween(0, this.gridSize - 1));
     }
 
     /**
@@ -63,9 +124,42 @@ public final class TreasureHuntGame {
         for (int i = 0; i < this.guesses; i++) {
             this.players.forEach(this::takeGuess);
             System.out.println("\nThere are " + (this.guesses - i - 1) + " guesses left.");
+            this.getMonsterSlots().forEach(this::moveMonster);
         }
 
         this.printResults(); // Print the results of the game.
+    }
+
+    /**
+     * Randomly moves a monster at the given grid element.
+     *
+     * @param gridElement The grid element that currently holds the monster.
+     */
+    private void moveMonster (final GridElement gridElement) {
+        final TreasureGridElement treasureGridElement = ((TreasureGridElement) gridElement);
+        final Monster monster = treasureGridElement.getMonster();
+
+        // If there aren't any slots available for monsters, leave them where they are.
+        if (!monsterSlotAvailable()) return;
+
+        Pair<Integer, Integer> newPosition;
+
+        do {
+            final int newX = gridElement.getPosition().getKey() + IntegerUtils.getRandomIntBetween(-monster.getStealth(), monster.getStealth());
+            final int newY = gridElement.getPosition().getValue() + IntegerUtils.getRandomIntBetween(-monster.getStealth(), monster.getStealth());
+
+            newPosition = new Pair<>(newX >= this.treasureGrid.getGrid().size() ? this.treasureGrid.getGrid().size() - 1 : Math.max(newX, 0), newY >= this.treasureGrid.getGrid().get(0).size() ? this.treasureGrid.getGrid().get(0).size() - 1 : Math.max(newY, 0));
+        } while (((TreasureGridElement) this.treasureGrid.getElementAt(newPosition)).getMonster() != null);
+
+        treasureGridElement.clearMonster(); // Clear monster from old position.
+        ((TreasureGridElement) this.treasureGrid.getElementAt(newPosition)).setMonster(monster); // Add monster to new position.
+    }
+
+    /**
+     * @return A list of grid elements containing monsters.
+     */
+    private List<GridElement> getMonsterSlots () {
+        return this.treasureGrid.getGridElements().stream().filter(gridElement -> ((TreasureGridElement) gridElement).getMonster() != null).collect(Collectors.toList());
     }
 
     private void takeGuess (final Player player) {
@@ -80,27 +174,51 @@ public final class TreasureHuntGame {
         // Get guess position until it is a valid position on the grid.
 
         do {
-            guessPositionString = InputUtils.getInput("\nGuess a position (for example, A1 would be the first position). ", true).toUpperCase();
+            guessPositionString = InputUtils.getInput("\nGuess a position (for example, A1 would be the first position). ").toUpperCase();
             guessPosition = this.treasureGrid.getElementPosition(guessPositionString);
         } while (guessPosition == null);
 
-        if (!this.treasureMap.containsKey(guessPosition)) {
-            System.out.println("No treasure at this position.");
+        final TreasureGridElement gridElement = (TreasureGridElement) this.treasureGrid.getElementAt(guessPosition);
+        final Monster monster = gridElement.getMonster();
+
+        if (monster != null) {
+            final Map<ITreasureItem, Integer> treasureItemsTaken = new HashMap<>();
+
+            for (int i = 0; i < IntegerUtils.getRandomIntBetween(1, monster.getStealth()); i++) {
+                if (player.getFoundTreasure().size() == 0) break;
+
+                // Retrieve random piece of treasure.
+                final ITreasureItem treasureItem = player.getFoundTreasure().get(IntegerUtils.getRandomIntBetween(0, player.getFoundTreasure().size() - 1));
+
+                // Steal it from player and add it to treasure taken list.
+                player.getFoundTreasure().remove(treasureItem);
+                if (treasureItemsTaken.containsKey(treasureItem)) treasureItemsTaken.put(treasureItem, treasureItemsTaken.get(treasureItem) + 1);
+                else treasureItemsTaken.put(treasureItem, 1);
+            }
+
+            // TODO: Work out punishment if player has no treasure items, improve display of items taken.
+            System.out.println("\nYou landed on a monster! " + (treasureItemsTaken.size() > 0 ? "They took the following items:" : ""));
+            treasureItemsTaken.forEach((treasureItem, count) -> System.out.println("- " + count + " " + treasureItem.getName() + (count > 1 ? "s" : "")));
+        }
+
+        if (gridElement.isTreasureItemTaken()) {
+            System.out.println("\nNo treasure at this position.");
 
             // Sets the guesses position to [O] to show they have already searched there.
-            this.treasureGrid.getGrid().get(guessPosition.getKey()).set(guessPosition.getValue(), "[O]");
+            this.treasureGrid.getGrid().get(guessPosition.getKey()).get(guessPosition.getValue()).setDisplayText("[O]");
 
             return;
         }
 
-        // Gets the treasure item and the position.
-        final ITreasureItem treasureItem = this.treasureMap.get(guessPosition);
+        gridElement.setTreasureItemTaken(true);
+
+        final ITreasureItem treasureItem = gridElement.getTreasureItem();
         // Sets the guess position to [X] to show that they found treasure there.
-        this.treasureGrid.getGrid().get(guessPosition.getKey()).set(guessPosition.getValue(), "[X]");
+        this.treasureGrid.getGrid().get(guessPosition.getKey()).get(guessPosition.getValue()).setDisplayText("[X]");
         // Add the treasure item to the foundTreasure list.
         player.getFoundTreasure().add(treasureItem);
 
-        System.out.println("You found a " + treasureItem.getName() + " worth " + treasureItem.getValue() + " gold coins.");
+        System.out.println("\nYou found a " + treasureItem.getName() + " worth " + treasureItem.getValue() + " gold coins.");
     }
 
     /**
@@ -143,8 +261,10 @@ public final class TreasureHuntGame {
      */
     private void fillOutGrid() {
         for (int i = 0; i < this.treasureGrid.getGrid().size(); i++)
-            for (int j = 0; j < this.treasureGrid.getGrid().get(i).size(); j++)
-                this.treasureGrid.getGrid().get(i).set(j, "[" + (this.treasureMap.containsKey(new Pair<>(i, j)) ? 'X' : 'O') + "]");
+            for (int j = 0; j < this.treasureGrid.getGrid().get(i).size(); j++) {
+                final TreasureGridElement gridElement = (TreasureGridElement) this.treasureGrid.getGrid().get(i).get(j);
+                this.treasureGrid.getGrid().get(i).get(j).setDisplayText("[" + (gridElement.getTreasureItem() != null ? 'X' : 'O') + "]");
+            }
     }
 
     /**

@@ -1,6 +1,6 @@
 package com.harleyoconnor.treasurehunt;
 
-import com.harleyoconnor.javagrids.utils.InputUtils;
+import com.harleyoconnor.javautilities.InputUtils;
 import com.harleyoconnor.treasurehunt.treasure.TreasureItems;
 
 import java.util.ArrayList;

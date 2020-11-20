@@ -23,7 +23,7 @@ dependencies {
     // Java Utilities - miscellaneous utility classes.
     implementation group: 'com.harleyoconnor.javautilities', name: 'JavaUtilities', version: '0.0.3'
     // Java Grids - allows for creation of 2D grids.
-    implementation group: 'com.harleyoconnor.javagrids', name: 'JavaGrids', version: '1.0.0'
+    implementation group: 'com.harleyoconnor.javagrids', name: 'JavaGrids', version: '1.2.0'
 
     // Allows for testing classes.
     testCompile group: 'junit', name: 'junit', version: '4.12'

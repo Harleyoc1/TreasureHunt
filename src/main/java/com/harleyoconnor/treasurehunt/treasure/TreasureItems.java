@@ -1,6 +1,6 @@
 package com.harleyoconnor.treasurehunt.treasure;
 
-import com.harleyoconnor.javagrids.utils.IntegerUtils;
+import com.harleyoconnor.javautilities.IntegerUtils;
 import com.harleyoconnor.javautilities.FileUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;

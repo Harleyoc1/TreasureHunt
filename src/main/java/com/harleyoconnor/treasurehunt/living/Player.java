@@ -1,4 +1,4 @@
-package com.harleyoconnor.treasurehunt;
+package com.harleyoconnor.treasurehunt.living;
 
 import com.harleyoconnor.treasurehunt.treasure.ITreasureItem;
 
